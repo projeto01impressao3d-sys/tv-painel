@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel da TV</title>
+<style>
+/* =========================================================
+   PAINEL DA TV — layout "Caos Roxo" (horizontal 1920x1080)
+   Configurações: bloco CONFIG no <script> lá embaixo.
+   ========================================================= */
+:root{
+  --bg:linear-gradient(118deg,#2a1470 0%,#4b20b8 30%,#7a2fd6 58%,#b23fe0 80%,#d552d6 100%);
+  --txt:#fff;
+  --sub:rgba(255,255,255,.72);
+  --dim:rgba(255,255,255,.48);
+  --line:rgba(255,255,255,.16);
+  --panel:rgba(20,6,60,.28);
+  --now:#ff4d6d;
+  --up:#7dffb0; --down:#ffb0b0;
+  --spot:#1ed760;
+}
+body.tema-preto{--bg:#000;--panel:rgba(255,255,255,.06);--line:rgba(255,255,255,.12);--badge:#ff7a1a;--badge-txt:#1a0800;--today:#ff7a1a}
+body.tema-laranja{--bg:radial-gradient(ellipse 75% 95% at 100% 100%,#ff7a1a 0%,#d4520d 22%,#6e2306 48%,rgba(20,6,0,0) 75%),linear-gradient(118deg,#000 0%,#050302 55%,#1a0a03 100%);
+  --panel:rgba(255,255,255,.05);--line:rgba(255,255,255,.12);--badge:#ff7a1a;--badge-txt:#1a0800;--today:#ff7a1a}
+body.tema-azul{--bg:linear-gradient(118deg,#071a3d 0%,#0d3a7a 40%,#1667b8 75%,#2a9fd8 100%);--panel:rgba(0,10,40,.3)}
+body.tema-escuro{--bg:linear-gradient(118deg,#0b0b10 0%,#16161f 55%,#22222e 100%);--panel:rgba(255,255,255,.04)}
+body.tema-verde{--bg:linear-gradient(118deg,#062b22 0%,#0b4d3b 45%,#138061 80%,#2bb07e 100%);--panel:rgba(0,20,10,.3)}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;color:var(--txt);
+  font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;cursor:none}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;overflow:hidden;
+  transform-origin:center center;transform:translate(-50%,-50%);background:var(--bg)}
+#ui{position:absolute;inset:0;padding:30px 36px 30px;display:grid;
+  grid-template-columns:812px 560px 1fr;gap:0 36px;transition:transform 4s ease}
+.col{display:flex;flex-direction:column;min-height:0;min-width:0}
+.hide{transition:opacity .8s}
+.lbl{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--sub);font-weight:600}
+
+/* ================= COLUNA A: relógio + semana ================= */
+.head{display:flex;align-items:center;gap:26px;height:92px;flex:none}
+.clock{font-size:64px;font-weight:300;letter-spacing:-.01em;font-variant-numeric:tabular-nums;line-height:1}
+.clock sup{font-size:22px;color:var(--sub);vertical-align:top;margin-left:3px}
+.date{font-size:27px;font-weight:600}
+.date small{display:block;font-size:17px;font-weight:400;color:var(--sub);margin-top:3px}
+.wifi{margin-left:auto;display:flex;align-items:center;gap:12px}
+.wifi .t{text-align:right;font-size:18px;font-weight:600}
+.wifi .t small{display:block;font-size:13px;color:var(--sub);font-weight:400}
+.wifi canvas{width:84px;height:84px;background:#fff;border-radius:6px;padding:5px;image-rendering:pixelated}
+
+.week{flex:1;margin-top:14px;display:grid;grid-template-columns:46px repeat(7,1fr);
+  grid-template-rows:40px auto 1fr;min-height:0;background:var(--panel);border-radius:14px;padding:8px 8px 10px 0}
+.wk-dh{text-align:center;font-size:14px;color:var(--sub);text-transform:uppercase;letter-spacing:.06em;align-self:center}
+.wk-dh b{font-size:20px;color:#fff;margin-left:4px;letter-spacing:0}
+.wk-dh.today b{background:var(--today,var(--now));border-radius:14px;padding:1px 8px}
+.wk-ad{grid-column:2/-1;display:grid;grid-template-columns:repeat(7,1fr);gap:0;border-bottom:1px solid var(--line);padding-bottom:4px;min-height:6px}
+.wk-ad .cell{padding:0 3px;display:flex;flex-direction:column;gap:3px}
+.wk-ad .pill{font-size:12.5px;border-radius:5px;padding:2px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.wk-hours{position:relative;min-height:0}
+.wk-hours div{position:absolute;right:8px;font-size:12px;color:var(--dim);transform:translateY(-50%);font-variant-numeric:tabular-nums}
+.wk-body{grid-column:2/-1;position:relative;display:grid;grid-template-columns:repeat(7,1fr);min-height:0}
+.wk-body .gl{position:absolute;left:0;right:0;border-top:1px solid var(--line)}
+.wk-day{position:relative;border-left:1px solid var(--line)}
+.wk-day.today{background:rgba(255,255,255,.06)}
+.ev{position:absolute;border-radius:6px;padding:3px 6px;overflow:hidden;font-size:12.5px;line-height:1.2;
+  box-shadow:0 1px 0 rgba(0,0,0,.15);border:1px solid rgba(0,0,0,.12)}
+.ev b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ev span{opacity:.8;font-size:11.5px}
+.ev.past{opacity:.45}
+.nowline{position:absolute;left:-4px;right:0;height:2px;background:var(--now);z-index:3}
+.nowline::before{content:"";position:absolute;left:-5px;top:-5px;width:12px;height:12px;border-radius:50%;background:var(--now)}
+.nowtag{position:absolute;left:-44px;transform:translateY(-50%);background:var(--now);font-size:11px;font-weight:700;
+  border-radius:4px;padding:1px 4px;z-index:3}
+
+/* ================= COLUNA B: 3 dias + listas ================= */
+.days{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;height:560px;flex:none;padding-top:8px}
+.day h2{display:flex;align-items:baseline;gap:8px;font-weight:300;font-size:40px;line-height:1;margin-bottom:14px}
+.day h2 small{font-size:15px;font-weight:600;color:var(--sub);text-transform:uppercase;letter-spacing:.08em}
+.it{border-left:3px solid;padding:1px 0 1px 9px;margin-bottom:12px}
+.it time{display:block;font-size:13px;color:var(--sub);font-variant-numeric:tabular-nums}
+.it b{display:block;font-size:17px;font-weight:600;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.it.past{opacity:.45}
+.it.now time{color:#fff;font-weight:700}
+.more{font-size:13px;color:var(--dim)}
+.empty{font-size:15px;color:var(--dim)}
+
+.tick{display:flex;gap:10px;flex:none;margin-top:6px}
+.tk{flex:1;text-align:center;border-top:2px solid var(--line);padding-top:6px}
+.tk small{display:block;font-size:12px;color:var(--sub);letter-spacing:.08em}
+.tk b{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.tk i{display:block;font-style:normal;font-size:12px}
+.tk i.up{color:var(--up)} .tk i.down{color:var(--down)}
+.news{margin-top:16px;font-size:16px;flex:none;display:flex;gap:10px;align-items:center;min-width:0}
+.news .src{flex:none;font-size:11.5px;font-weight:800;letter-spacing:.1em;background:var(--badge,#fff);color:var(--badge-txt,#3b1a8a);border-radius:4px;padding:2px 6px}
+.news .item{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .6s}
+
+.lists{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:20px;min-height:0}
+.list{background:var(--panel);border-radius:14px;padding:14px 16px;overflow:hidden;min-height:0}
+.list .lbl{margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.list .lbl .badge{margin-left:auto;background:var(--badge,#fff);color:var(--badge-txt,#3b1a8a);border-radius:10px;padding:1px 8px;font-size:13px;letter-spacing:0}
+.task{display:flex;gap:9px;align-items:flex-start;font-size:15.5px;padding:3px 0}
+.task::before{content:"";flex:none;width:13px;height:13px;border:2px solid var(--sub);border-radius:3px;margin-top:3px}
+.task span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task small{color:var(--up);font-size:12px;margin-left:auto;flex:none;padding-left:6px}
+.mail{padding:4px 0 6px;border-bottom:1px solid var(--line)}
+.mail:last-child{border-bottom:0}
+.mail b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mail span{display:block;font-size:13.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub-h{font-size:12.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin:8px 0 4px}
+
+/* ================= COLUNA C: clima, YouTube, foto, Spotify ================= */
+.wx{display:flex;align-items:center;gap:12px;height:92px;flex:none;min-width:0}
+.wx .ico{font-size:44px;line-height:1}
+.wx .temp{font-size:46px;font-weight:300;line-height:1}
+.wx .d{font-size:13.5px;color:var(--sub);line-height:1.25;min-width:0;flex:1}
+.wx .d b{display:block;color:#fff;font-size:15px}
+.fc{display:flex;gap:10px;margin-left:auto;flex:none}
+.fc div{text-align:center;font-size:12.5px;color:var(--sub)}
+.fc div b{display:block;font-size:22px;margin:2px 0;font-weight:400}
+.fc div span{color:#fff}
+
+.media{border-radius:14px;overflow:hidden;position:relative;background:rgba(0,0,0,.25);flex:none;transition:all .6s ease}
+#yt{aspect-ratio:16/9;margin-top:14px}
+#yt iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
+.tag{position:absolute;left:8px;top:8px;z-index:2;background:rgba(0,0,0,.55);border-radius:6px;padding:3px 8px;font-size:12.5px}
+.tag b{color:#ff4040}
+#foto{flex:1;margin-top:16px;min-height:0}
+.ph{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 2s}
+.ph.on{opacity:1}
+.ph.fallback{background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(255,255,255,.02))}
+
+#spotify{display:flex;gap:12px;align-items:center;margin-top:16px;flex:none;height:78px}
+#spotify img{width:78px;height:78px;border-radius:8px;object-fit:cover;flex:none;background:rgba(0,0,0,.3)}
+#spotify .info{min-width:0;flex:1}
+#spotify .l{font-size:12px;color:var(--spot);letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+#spotify .m{font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+#spotify .a{font-size:14px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#spotify .bar{height:4px;background:rgba(255,255,255,.2);border-radius:4px;margin-top:7px;overflow:hidden}
+#spotify .bar div{height:100%;width:0;background:var(--spot);transition:width 1s linear}
+#spotify.compact img,#spotify.compact .bar{display:none}
+#spotify.compact{height:auto}
+
+.counts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px;flex:none}
+.cnt{text-align:center;border-top:2px solid var(--line);padding-top:6px}
+.cnt b{display:block;font-size:40px;font-weight:300;line-height:1.05}
+.cnt small{font-size:12.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.08em}
+
+/* ================= Modos (controle remoto) ================= */
+body.cinema #yt,body.frame #foto{position:absolute;inset:0;margin:0;border-radius:0;z-index:5;aspect-ratio:auto}
+body.cinema .hide,body.frame .hide{opacity:0}
+#mini{position:absolute;right:40px;bottom:30px;font-size:56px;font-weight:200;z-index:6;opacity:0;transition:opacity .8s;
+  text-shadow:0 2px 12px rgba(0,0,0,.6);font-variant-numeric:tabular-nums}
+body.frame #mini{opacity:1}
+#toast{position:absolute;left:50%;bottom:90px;transform:translate(-50%,20px);background:rgba(0,0,0,.8);border:1px solid var(--line);
+  border-radius:14px;padding:12px 22px;font-size:20px;opacity:0;transition:all .35s;z-index:10;white-space:nowrap}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast kbd{font-family:inherit;background:rgba(255,255,255,.16);border-radius:6px;padding:1px 8px;margin:0 3px}
+#night{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity 3s;z-index:20}
+</style>
+</head>
+<body>
+<div id="stage">
+<div id="ui">
+
+  <!-- ===== A ===== -->
+  <div class="col hide">
+    <div class="head">
+      <div class="clock" id="clock">--:--</div>
+      <div class="date" id="date">—<small id="greet"></small></div>
+      <div class="wifi" id="wifi" style="display:none">
+        <div class="t">Wi-Fi<small id="wifiNome"></small></div><canvas id="qr"></canvas>
+      </div>
+    </div>
+    <div class="week" id="week"></div>
+  </div>
+
+  <!-- ===== B ===== -->
+  <div class="col hide">
+    <div class="days" id="days"></div>
+    <div class="tick" id="tick"></div>
+    <div class="news"><span class="src" id="newsSrc">NOTÍCIAS</span><span class="item" id="newsItem">Carregando…</span></div>
+    <div class="lists">
+      <div class="list" id="tarefas"><div class="lbl">☑ Tarefas</div><div id="tarefasBody" class="empty">Carregando…</div></div>
+      <div class="list" id="email"><div class="lbl">✉ Gmail<span class="badge" id="mailN">–</span></div><div id="mailBody" class="empty">Carregando…</div></div>
+    </div>
+  </div>
+
+  <!-- ===== C ===== -->
+  <div class="col">
+    <div class="wx hide">
+      <div class="ico" id="wIco"></div><div class="temp" id="wTemp">--°</div>
+      <div class="d"><b id="wCity"></b><span id="wDesc">Carregando…</span></div>
+      <div class="fc" id="fc"></div>
+    </div>
+    <div class="media" id="yt"><div class="tag"><b>▶</b> <span id="ytSom">sem som</span></div><div id="ytFrame"></div></div>
+    <div class="media" id="foto"><div class="ph fallback on" id="phA"></div><div class="ph" id="phB"></div></div>
+    <div id="spotify" class="hide">
+      <img id="spCapa" alt="">
+      <div class="info"><div class="l" id="spL">Spotify</div><div class="m" id="spM">—</div><div class="a" id="spA"></div><div class="bar"><div id="spBar"></div></div></div>
+    </div>
+    <div class="counts hide" id="counts"></div>
+  </div>
+
+</div>
+<div id="mini"></div>
+<div id="toast"></div>
+<div id="night"></div>
+</div>
+
+<script>/* qrcode-generator 1.4.4 (MIT, Kazuhiko Arase) */
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});</script>
+<script>
+/* =========================================================
+   CONFIG — mexa aqui
+   ========================================================= */
+const CONFIG = {
+  nome: "Raphael",
+  cidade: "São Bernardo do Campo",
+  lat: -23.694, lon: -46.565,
+
+  tema: "preto",             // "preto" | "laranja" | "roxo" | "azul" | "verde" | "escuro"
+
+  // Grade da semana
+  horaInicio: 7,             // primeira hora mostrada
+  horaFim: 23,               // última hora mostrada
+
+  // YouTube: { tipo:"video", id:"..." } | { tipo:"playlist", id:"PL..." } | { tipo:"live", canal:"UC..." } | null
+  youtube: { tipo: "video", id: "jfKfPfyJRdk" },
+
+  // Contagens regressivas (dias)
+  contagens: [
+    { nome: "Natal", data: "2026-12-25" },
+    { nome: "Ano novo", data: "2027-01-01" }
+  ],
+
+  fotos: [],                 // fotos locais (se não usar a pasta do Drive)
+  trocarFotoACada: 20,       // segundos
+
+  cotacoes: ["USD-BRL", "EUR-BRL", "BTC-BRL", "ETH-BRL"],
+
+  googleACada: 5,            // minutos
+  spotifyACada: 10,          // segundos
+  noturno: { inicio: "23:30", fim: "06:30", escurecer: 0.92 }
+};
+/* ========================================================= */
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pad = n => String(n).padStart(2, "0");
+const H = new URLSearchParams(location.hash.slice(1));
+const API = H.get("api") || "", TOKEN = H.get("token") || "";
+document.body.classList.add("tema-" + CONFIG.tema);
+$("#wCity").textContent = CONFIG.cidade.length > 16 ? CONFIG.cidade.replace(/^São /, "S. ") : CONFIG.cidade;
+
+/* Sempre 16:9, escalado para qualquer tela (gira se a tela estiver em pé) */
+function encaixar(){
+  const emPe = innerHeight > innerWidth, W = emPe ? innerHeight : innerWidth, h = emPe ? innerWidth : innerHeight;
+  $("#stage").style.transform = `translate(-50%,-50%)${emPe ? " rotate(90deg)" : ""} scale(${Math.min(W/1920, h/1080)})`;
+}
+addEventListener("resize", encaixar); encaixar();
+
+async function api(acao, extra = ""){
+  if (!API) throw new Error("sem api");
+  const d = await (await fetch(`${API}?acao=${acao}&token=${encodeURIComponent(TOKEN)}${extra}`)).json();
+  if (d.erro) throw new Error(d.erro);
+  return d;
+}
+let toastT;
+function toast(html, ms = 2200){
+  const t = $("#toast"); t.innerHTML = html; t.classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), ms);
+}
+
+/* ---------- Relógio ---------- */
+let ultimoDia = new Date().getDate();
+function tick(){
+  const n = new Date(), h = n.getHours();
+  $("#clock").innerHTML = `${pad(h)}:${pad(n.getMinutes())}<sup>${pad(n.getSeconds())}</sup>`;
+  $("#mini").textContent = `${pad(h)}:${pad(n.getMinutes())}`;
+  const dt = n.toLocaleDateString("pt-BR", {weekday:"long", day:"numeric", month:"long"});
+  $("#date").firstChild.textContent = dt.charAt(0).toUpperCase() + dt.slice(1);
+  $("#greet").textContent = `${h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite"}, ${CONFIG.nome}`;
+  const toMin = t => { const [a, b] = t.split(":").map(Number); return a*60 + b; };
+  const c = h*60 + n.getMinutes(), i = toMin(CONFIG.noturno.inicio), f = toMin(CONFIG.noturno.fim);
+  $("#night").style.opacity = (i > f ? (c >= i || c < f) : (c >= i && c < f)) ? CONFIG.noturno.escurecer : 0;
+  if (n.getSeconds() === 0){ renderAgenda(); contagens(); }
+  if (n.getDate() !== ultimoDia){ ultimoDia = n.getDate(); google(); }
+}
+setInterval(tick, 1000);
+setInterval(() => { $("#ui").style.transform = `translate(${Math.round(Math.random()*8-4)}px,${Math.round(Math.random()*8-4)}px)`; }, 5*60*1000);
+
+/* ---------- Agenda: grade da semana + 3 dias ---------- */
+let eventos = [];
+const DIA = 864e5;
+function hoje0(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
+function parseEv(e){
+  const ini = e.diaInteiro ? new Date(e.inicio + "T00:00") : new Date(e.inicio);
+  const fim = e.diaInteiro ? new Date(e.fim + "T00:00") : new Date(e.fim);
+  return Object.assign({}, e, {ini, fimD: fim});
+}
+function corTexto(hex){
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || ""); if (!m) return "#fff";
+  const n = parseInt(m[1], 16), r = n>>16, g = (n>>8)&255, b = n&255;
+  return (0.299*r + 0.587*g + 0.114*b) > 150 ? "#1a1030" : "#fff";
+}
+const hm = d => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+function renderSemana(){
+  const H0 = CONFIG.horaInicio, H1 = CONFIG.horaFim, span = (H1 - H0) * 60;
+  const t0 = hoje0(), agora = new Date();
+  const evs = eventos.map(parseEv);
+  let html = `<div></div>`;
+  for (let i = 0; i < 7; i++){
+    const d = new Date(t0.getTime() + i*DIA);
+    const wd = d.toLocaleDateString("pt-BR", {weekday:"short"}).replace(".", "");
+    html += `<div class="wk-dh${i === 0 ? " today" : ""}">${wd}<b>${d.getDate()}</b></div>`;
+  }
+  // linha de "dia todo"
+  html += `<div></div><div class="wk-ad">`;
+  for (let i = 0; i < 7; i++){
+    const a = new Date(t0.getTime() + i*DIA), b = new Date(a.getTime() + DIA);
+    const ad = evs.filter(e => e.diaInteiro && e.ini < b && e.fimD > a);
+    html += `<div class="cell">` + ad.slice(0, 2).map(e =>
+      `<div class="pill" style="background:${esc(e.cor)};color:${corTexto(e.cor)}">${esc(e.titulo)}</div>`).join("") +
+      (ad.length > 2 ? `<div class="more">+${ad.length - 2}</div>` : "") + `</div>`;
+  }
+  html += `</div>`;
+  // horas
+  html += `<div class="wk-hours">`;
+  for (let h = H0 + 1; h < H1; h++) html += `<div style="top:${(h - H0) * 60 / span * 100}%">${pad(h)}h</div>`;
+  html += `</div><div class="wk-body">`;
+  for (let h = H0 + 1; h < H1; h++) html += `<div class="gl" style="top:${(h - H0) * 60 / span * 100}%"></div>`;
+  for (let i = 0; i < 7; i++){
+    const a = new Date(t0.getTime() + i*DIA);
+    const lo = new Date(a.getTime() + H0*3600e3), hi = new Date(a.getTime() + H1*3600e3);
+    // eventos com horário deste dia, recortados na janela visível
+    const ds = evs.filter(e => !e.diaInteiro && e.ini < hi && e.fimD > lo)
+      .map(e => ({e, s: Math.max(e.ini, lo), f: Math.min(e.fimD, hi)}))
+      .sort((x, y) => x.s - y.s || y.f - x.f);
+    // distribui eventos sobrepostos lado a lado
+    let grupo = [], fimGrupo = 0; const grupos = [];
+    ds.forEach(x => { if (grupo.length && x.s >= fimGrupo){ grupos.push(grupo); grupo = []; } grupo.push(x); fimGrupo = Math.max(fimGrupo, x.f); });
+    if (grupo.length) grupos.push(grupo);
+    let evHtml = "";
+    grupos.forEach(g => {
+      const faixas = [];
+      g.forEach(x => { let k = faixas.findIndex(fim => fim <= x.s); if (k < 0){ k = faixas.length; faixas.push(0); } faixas[k] = x.f; x.k = k; });
+      g.forEach(x => {
+        const top = (x.s - lo) / 60000 / span * 100, alt = Math.max((x.f - x.s) / 60000 / span * 100, 2.2);
+        const w = 100 / faixas.length;
+        const passado = x.e.fimD < agora ? " past" : "";
+        const altPx = alt / 100 * 800;
+        evHtml += `<div class="ev${passado}" style="top:${top}%;height:${alt}%;left:calc(${x.k*w}% + 2px);width:calc(${w}% - 4px);background:${esc(x.e.cor)};color:${corTexto(x.e.cor)}">` +
+          `<b>${esc(x.e.titulo)}</b>${altPx > 34 ? `<span>${hm(x.e.ini)}–${hm(x.e.fimD)}</span>` : ""}</div>`;
+      });
+    });
+    if (i === 0 && agora > lo && agora < hi){
+      const top = (agora - lo) / 60000 / span * 100;
+      evHtml += `<div class="nowline" style="top:${top}%"></div>`;
+    }
+    html += `<div class="wk-day${i === 0 ? " today" : ""}">${evHtml}</div>`;
+  }
+  html += `</div>`;
+  $("#week").innerHTML = html;
+  // etiqueta da hora atual na coluna de horas
+  if (agora.getHours() >= H0 && agora.getHours() < H1){
+    const top = ((agora.getHours() - H0) * 60 + agora.getMinutes()) / span * 100;
+    $(".wk-hours").insertAdjacentHTML("beforeend", `<span class="nowtag" style="left:4px;top:${top}%">${hm(agora)}</span>`);
+  }
+}
+
+function renderDias(){
+  const t0 = hoje0(), agora = new Date(), evs = eventos.map(parseEv);
+  const nomes = ["Hoje", "Amanhã"];
+  let html = "";
+  for (let i = 0; i < 3; i++){
+    const a = new Date(t0.getTime() + i*DIA), b = new Date(a.getTime() + DIA);
+    const rot = nomes[i] || a.toLocaleDateString("pt-BR", {weekday:"long"}).replace("-feira", "");
+    const lista = evs.filter(e => e.ini < b && e.fimD > a).sort((x, y) => (y.diaInteiro - x.diaInteiro) || (x.ini - y.ini));
+    let itens = lista.slice(0, 7).map(e => {
+      const passado = !e.diaInteiro && e.fimD < agora, now = !e.diaInteiro && e.ini <= agora && e.fimD > agora;
+      const quando = e.diaInteiro ? "Dia todo" : now ? `Agora · até ${hm(e.fimD)}` : `${hm(e.ini)} – ${hm(e.fimD)}`;
+      return `<div class="it${passado ? " past" : ""}${now ? " now" : ""}" style="border-color:${esc(e.cor)}"><time>${quando}</time><b>${esc(e.titulo)}</b></div>`;
+    }).join("");
+    if (lista.length > 7) itens += `<div class="more">+ ${lista.length - 7} evento(s)</div>`;
+    if (!lista.length) itens = `<div class="empty">${API ? "Livre 🎉" : "Conecte o Apps Script"}</div>`;
+    html += `<div class="day"><h2>${pad(a.getDate())}<small>${esc(rot)}</small></h2>${itens}</div>`;
+  }
+  $("#days").innerHTML = html;
+}
+function renderAgenda(){ renderSemana(); renderDias(); }
+
+/* ---------- Tarefas, Gmail, notícias, Wi-Fi ---------- */
+function renderTarefas(listas){
+  if (!listas || !listas.length){ $("#tarefasBody").className = "empty"; $("#tarefasBody").textContent = API ? "Nenhuma lista no Google Tasks" : "Conecte o Apps Script"; return; }
+  $("#tarefasBody").className = "";
+  $("#tarefasBody").innerHTML = listas.map((l, i) =>
+    (listas.length > 1 ? `<div class="sub-h"${i === 0 ? ' style="margin-top:0"' : ""}>${esc(l.nome)}</div>` : "") +
+    (l.itens.length ? l.itens.slice(0, listas.length > 1 ? 4 : 8).map(t => {
+      const p = t.prazo ? new Date(t.prazo).toLocaleDateString("pt-BR", {day:"2-digit", month:"2-digit", timeZone:"UTC"}) : "";
+      return `<div class="task"><span>${esc(t.titulo)}</span>${p ? `<small>${p}</small>` : ""}</div>`;
+    }).join("") : `<div class="empty">Tudo feito ✓</div>`)
+  ).join("");
+}
+function renderEmail(m){
+  $("#mailN").textContent = m.naoLidos > 99 ? "99+" : m.naoLidos;
+  if (!m.itens.length){ $("#mailBody").className = "empty"; $("#mailBody").textContent = m.naoLidos ? `${m.naoLidos} não lido(s)` : "Caixa em dia ✓"; return; }
+  $("#mailBody").className = "";
+  $("#mailBody").innerHTML = m.itens.slice(0, 4).map(i => `<div class="mail"><b>${esc(i.de)}</b><span>${esc(i.assunto)}</span></div>`).join("");
+}
+function renderWifi(w){
+  if (!w || typeof qrcode === "undefined"){ $("#wifi").style.display = "none"; return; }
+  const q = qrcode(0, "M"); q.addData(w.qr); q.make();
+  const n = q.getModuleCount(), c = $("#qr"); c.width = c.height = n;
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, n, n); g.fillStyle = "#000";
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (q.isDark(y, x)) g.fillRect(x, y, 1, 1);
+  $("#wifiNome").textContent = w.rede; $("#wifi").style.display = "";
+}
+let noticias = [], nIdx = 0;
+function girarNoticia(){
+  if (!noticias.length) return;
+  const n = noticias[nIdx++ % noticias.length], el = $("#newsItem");
+  el.style.opacity = 0;
+  setTimeout(() => { el.textContent = n.titulo; $("#newsSrc").textContent = /g1/i.test(n.fonte) ? "G1" : "NOTÍCIAS"; el.style.opacity = 1; }, 600);
+}
+setInterval(girarNoticia, 12000);
+
+async function google(){
+  if (!API){ renderAgenda(); renderTarefas(null); $("#mailBody").textContent = "Conecte o Apps Script"; $("#newsItem").textContent = "Conecte o Apps Script para ver as notícias."; return; }
+  try{
+    const d = await api("google");
+    eventos = d.agenda || []; renderAgenda();
+    renderTarefas(d.tarefas); renderEmail(d.email); renderWifi(d.wifi);
+    const primeira = !noticias.length;
+    if (d.noticias && d.noticias.length) noticias = d.noticias;
+    if (primeira) girarNoticia();
+  }catch(e){}
+}
+
+/* ---------- Clima ---------- */
+const WMO = {0:["☀️","Céu limpo"],1:["🌤️","Poucas nuvens"],2:["⛅","Parc. nublado"],3:["☁️","Nublado"],45:["🌫️","Neblina"],48:["🌫️","Neblina"],
+  51:["🌦️","Garoa"],53:["🌦️","Garoa"],55:["🌧️","Garoa forte"],61:["🌧️","Chuva fraca"],63:["🌧️","Chuva"],65:["🌧️","Chuva forte"],
+  80:["🌦️","Pancadas"],81:["🌧️","Pancadas"],82:["⛈️","Pancadas fortes"],95:["⛈️","Trovoadas"],96:["⛈️","Trovoadas"],99:["⛈️","Trovoadas"]};
+const wmo = c => WMO[c] || ["🌡️","—"];
+async function clima(){
+  try{
+    const d = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${CONFIG.lat}&longitude=${CONFIG.lon}` +
+      `&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=America%2FSao_Paulo&forecast_days=4`)).json();
+    $("#wIco").textContent = wmo(d.current.weather_code)[0];
+    $("#wTemp").textContent = Math.round(d.current.temperature_2m) + "°";
+    $("#wDesc").textContent = `${wmo(d.current.weather_code)[1]} · ${Math.round(d.daily.temperature_2m_max[0])}° / ${Math.round(d.daily.temperature_2m_min[0])}°`;
+    $("#fc").innerHTML = d.daily.time.slice(1, 4).map((t, i) => {
+      const dia = new Date(t + "T12:00").toLocaleDateString("pt-BR", {weekday:"short"}).replace(".", "");
+      return `<div>${dia}<b>${wmo(d.daily.weather_code[i+1])[0]}</b><span>${Math.round(d.daily.temperature_2m_max[i+1])}°</span> ${Math.round(d.daily.temperature_2m_min[i+1])}°</div>`;
+    }).join("");
+  }catch(e){ $("#wDesc").textContent = "Clima indisponível"; }
+}
+
+/* ---------- Cotações ---------- */
+async function cotacoes(){
+  try{
+    const d = await (await fetch("https://economia.awesomeapi.com.br/json/last/" + CONFIG.cotacoes.join(","))).json();
+    $("#tick").innerHTML = Object.values(d).map(c => {
+      const v = Number(c.bid), p = Number(c.pctChange);
+      const f = v > 1000 ? v.toLocaleString("pt-BR", {maximumFractionDigits:0}) : v.toLocaleString("pt-BR", {minimumFractionDigits:2, maximumFractionDigits:2});
+      return `<div class="tk"><small>${esc(c.code)}</small><b>R$ ${f}</b><i class="${p >= 0 ? "up" : "down"}">${p >= 0 ? "▲" : "▼"} ${Math.abs(p).toFixed(2)}%</i></div>`;
+    }).join("");
+  }catch(e){}
+}
+
+/* ---------- Contagens ---------- */
+function contagens(){
+  const t0 = hoje0();
+  $("#counts").innerHTML = CONFIG.contagens.slice(0, 2).map(c => {
+    const n = Math.round((new Date(c.data + "T00:00") - t0) / DIA);
+    return `<div class="cnt"><b>${n > 0 ? n : n === 0 ? "Hoje!" : "—"}</b><small>${n === 1 ? "dia" : "dias"} p/ ${esc(c.nome)}</small></div>`;
+  }).join("");
+}
+
+/* ---------- Fotos ---------- */
+let fotos = [], fIdx = -1, front = $("#phA"), back = $("#phB"), fotoTimer;
+async function carregarFotos(){
+  try{ const d = await api("fotos"); if (d.fotos.length){ fotos = d.fotos.map(id => ({drive:id})); return; } }catch(e){}
+  fotos = CONFIG.fotos.map(src => ({src}));
+}
+async function urlFoto(f){
+  if (f.src) return f.src;
+  if (!f.url){ const d = await api("foto", "&id=" + encodeURIComponent(f.drive)); f.url = `data:${d.mime};base64,${d.b64}`; }
+  return f.url;
+}
+async function mostrarFoto(delta = 1){
+  if (!fotos.length) return;
+  fIdx = (fIdx + delta + fotos.length) % fotos.length;
+  try{
+    const url = await urlFoto(fotos[fIdx]);
+    back.classList.remove("fallback"); back.style.backgroundImage = `url("${url}")`;
+    back.classList.add("on"); front.classList.remove("on"); [front, back] = [back, front];
+    fotos.forEach((f, i) => { if (f.drive && f.url && Math.abs(i - fIdx) > 1) delete f.url; });
+  }catch(e){}
+  clearInterval(fotoTimer); fotoTimer = setInterval(() => mostrarFoto(1), CONFIG.trocarFotoACada*1000);
+}
+
+/* ---------- Spotify ---------- */
+let sp = null, spAt = 0;
+function renderSpotify(){
+  const box = $("#spotify");
+  if (!sp || sp.status === "desativado"){ box.style.display = API ? "none" : ""; if (!API){ box.classList.add("compact"); $("#spM").textContent = "Não conectado"; } return; }
+  box.style.display = "";
+  if (sp.status === "tocando" || sp.status === "pausado"){
+    box.classList.remove("compact");
+    if ($("#spCapa").dataset.src !== sp.capa){ $("#spCapa").src = sp.capa; $("#spCapa").dataset.src = sp.capa; }
+    $("#spL").textContent = sp.status === "tocando" ? "♫ Tocando agora" : "❚❚ Pausado";
+    $("#spM").textContent = sp.musica; $("#spA").textContent = sp.artista;
+    const prog = sp.status === "tocando" ? Math.min(sp.duracao, sp.progresso + (Date.now() - spAt)) : sp.progresso;
+    $("#spBar").style.width = (sp.duracao ? prog / sp.duracao * 100 : 0) + "%";
+  } else {
+    box.classList.add("compact"); $("#spL").textContent = "Spotify";
+    $("#spM").textContent = sp.status === "desconectado" ? "Conta não conectada" : "Nada tocando"; $("#spA").textContent = "";
+  }
+}
+async function spotify(){ try{ const d = await api("spotify"); sp = d.spotify; spAt = Date.now(); }catch(e){} renderSpotify(); }
+
+/* ---------- YouTube ---------- */
+let yt = null;
+(function(){
+  const c = CONFIG.youtube;
+  if (!c){ $("#yt").style.display = "none"; return; }
+  const b = "https://www.youtube.com/embed/";
+  const o = location.protocol.startsWith("http") ? `&origin=${encodeURIComponent(location.origin)}` : "";
+  const p = `autoplay=1&mute=1&controls=0&rel=0&playsinline=1&enablejsapi=1&iv_load_policy=3${o}`;
+  const src = c.tipo === "playlist" ? `${b}videoseries?list=${encodeURIComponent(c.id)}&loop=1&${p}`
+            : c.tipo === "live" ? `${b}live_stream?channel=${encodeURIComponent(c.canal)}&${p}`
+            : `${b}${encodeURIComponent(c.id)}?loop=1&playlist=${encodeURIComponent(c.id)}&${p}`;
+  $("#ytFrame").outerHTML = `<iframe id="ytFrame" src="${src}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+  const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
+})();
+window.onYouTubeIframeAPIReady = () => { yt = new YT.Player("ytFrame"); };
+function somYouTube(){
+  if (!yt || !yt.isMuted) return toast("YouTube ainda carregando…");
+  if (yt.isMuted()){ yt.unMute(); yt.setVolume(70); $("#ytSom").textContent = "com som"; toast("🔊 Som ligado"); }
+  else { yt.mute(); $("#ytSom").textContent = "sem som"; toast("🔇 Som desligado"); }
+}
+
+/* ---------- Controle remoto ---------- */
+const AJUDA = `<kbd>OK</kbd> som · <kbd>↑</kbd> YouTube tela cheia · <kbd>↓</kbd> foto tela cheia · <kbd>←</kbd><kbd>→</kbd> fotos`;
+document.addEventListener("keydown", e => {
+  const k = e.key, kc = e.keyCode, b = document.body.classList;
+  if (k === "Enter" || kc === 13 || kc === 23 || k === "MediaPlayPause" || kc === 179 || kc === 85) somYouTube();
+  else if (k === "ArrowUp" || kc === 38 || kc === 19){ if (!CONFIG.youtube) return; b.remove("frame"); b.toggle("cinema"); toast(b.contains("cinema") ? "YouTube em tela cheia — <kbd>↑</kbd> volta" : "Painel"); }
+  else if (k === "ArrowDown" || kc === 40 || kc === 20){ b.remove("cinema"); b.toggle("frame"); toast(b.contains("frame") ? "Foto em tela cheia — <kbd>↓</kbd> volta" : "Painel"); }
+  else if (k === "ArrowRight" || kc === 39 || kc === 22){ mostrarFoto(1); toast("Próxima foto", 1000); }
+  else if (k === "ArrowLeft" || kc === 37 || kc === 21){ mostrarFoto(-1); toast("Foto anterior", 1000); }
+  else if (k === "ContextMenu" || kc === 82 || k === "?") toast(AJUDA, 5000);
+  else return;
+  e.preventDefault();
+});
+
+/* ---------- Início ---------- */
+tick(); renderAgenda(); contagens(); clima(); cotacoes(); google(); spotify();
+carregarFotos().then(() => mostrarFoto(1));
+setInterval(clima, 20*60*1000);
+setInterval(cotacoes, 10*60*1000);
+setInterval(google, CONFIG.googleACada*60*1000);
+setInterval(spotify, CONFIG.spotifyACada*1000); setInterval(renderSpotify, 1000);
+setInterval(carregarFotos, 60*60*1000);
+setTimeout(() => toast(AJUDA, 7000), 2500);
+setTimeout(() => location.reload(), 24*60*60*1000);
+</script>
+</body>
+</html>
