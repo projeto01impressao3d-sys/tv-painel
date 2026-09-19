@@ -226,8 +226,8 @@ const CONFIG = {
   horaFim: 23,               // última hora mostrada
 
   // YouTube: { tipo:"video", id:"..." } | { tipo:"playlist", id:"PL..." } | { tipo:"live", canal:"UC..." } | null
-     youtube: { tipo: "live", canal: "UCSJ4gkVC6NrvII8umztf0Ow" },
-   
+  youtube: { tipo: "video", id: "CFGLoQIhmow" },   // mix lofi (Lofi Girl)
+
   // Contagens regressivas (dias)
   contagens: [
     { nome: "Natal", data: "2026-12-25" },
@@ -532,7 +532,7 @@ let yt = null;
   const src = c.tipo === "playlist" ? `${b}videoseries?list=${encodeURIComponent(c.id)}&loop=1&${p}`
             : c.tipo === "live" ? `${b}live_stream?channel=${encodeURIComponent(c.canal)}&${p}`
             : `${b}${encodeURIComponent(c.id)}?loop=1&playlist=${encodeURIComponent(c.id)}&${p}`;
-  $("#ytFrame").outerHTML = `<iframe id="ytFrame" src="${src}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+  $("#ytFrame").outerHTML = `<iframe id="ytFrame" src="${src}" allow="autoplay; encrypted-media" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
   const s = document.createElement("script"); s.src = "https://www.youtube.com/iframe_api"; document.head.appendChild(s);
 })();
 window.onYouTubeIframeAPIReady = () => { yt = new YT.Player("ytFrame"); };
